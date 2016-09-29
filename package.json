@@ -1,0 +1,25 @@
+{
+  "name": "github-pivotal-sync",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start":"node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chalettu/github-pivotal-sync.git"
+  },
+  "author": "Chris Hale",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chalettu/github-pivotal-sync/issues"
+  },
+  "homepage": "https://github.com/chalettu/github-pivotal-sync#readme",
+  "dependencies": {
+    "github-webhook-handler": "^0.6.0",
+    "request": "^2.75.0",
+    "request-promise": "^4.1.1"
+  }
+}
