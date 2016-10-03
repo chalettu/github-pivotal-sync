@@ -132,6 +132,7 @@ function get_pivotal_user_list() {
 
 function add_pivotal_label(github_issue_url, label) {
     console.log("Lablel to be added " + label);
+    
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
         get_pivotal_labels(issue_number).then(function (labels) {
 
@@ -143,7 +144,7 @@ function add_pivotal_label(github_issue_url, label) {
                     "story_id":issue_number,
                     "name":label
                 };
-
+                sleepFor(Math.random() * 1500);
                 var options = build_pivotal_rest_request(url, body);
                 options.method = "POST";
                 rp(options)
@@ -197,7 +198,7 @@ function remove_pivotal_labels(github_issue_url, label) {
 
             var options = build_pivotal_rest_request(url, body);
             options.method = "DELETE";
-
+            sleepFor(Math.random() * 1500);
             rp(options)
                 .then(function (parsedBody) {
                   console.log("Label "+label+"("+existing_label.id+" ) removed from ticket +"+github_issue_url);
@@ -307,4 +308,8 @@ function search(array, key, prop){
             return array[i];
         }
     }
+}
+function sleepFor( sleepDuration ){
+    var now = new Date().getTime();
+    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
 }
