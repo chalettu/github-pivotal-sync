@@ -75,7 +75,6 @@ handler.on('issues', function (event) {
             remove_pivotal_labels(issue_data.issue.html_url, issue_data.label.name);
             break;
         case 'assigned':
-            //  assignee
             var assignee = issue_data.assignee.login;
             assign_pivotal_user(assignee, issue_data.issue.html_url);
             break;
@@ -84,8 +83,12 @@ handler.on('issues', function (event) {
             removed_assigned_pivotal_user(assignee, issue_data.issue.html_url);
             break;
         case "opened":
-            create_pivotal_issue(issue_data);
+            create_pivotal_issue(issue_data.issue);
             break;
+         case "closed":
+            close_pivotal_issue(issue_data.issue);
+            break;
+        
     }
 });
 
@@ -95,7 +98,9 @@ function create_pivotal_issue(issue_data){
     
     var body = {
         "name": issue_data.title,
-        "description":description
+        "description":description,
+        "current_state":"started",
+        "estimate":0
     };
    
     var url=pivotal_base_url+'projects/'+config.pivotal.project+'/stories';
@@ -109,6 +114,28 @@ function create_pivotal_issue(issue_data){
             // POST failed...
             console.log(err)
         });
+}
+function close_pivotal_issue(issue_data) {
+
+    find_pivotal_issue(issue_data.html_url).then(function (issue_number) {
+        var project_id=parseInt(config.pivotal.project);
+        var body = {
+            "current_state": 'accepted'
+        };
+
+        var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/stories/'+issue_number;
+        var options = build_pivotal_rest_request(url, body);
+        options.method="PUT";
+        console.log(options);
+        rp(options)
+            .then(function (parsedBody) {
+                console.log(parsedBody);
+            })
+            .catch(function (err) {
+                // POST failed...
+                console.log(err)
+            });
+    });
 }
 function get_pivotal_user_list() {
     var deferred = Q.defer();
@@ -138,7 +165,7 @@ function add_pivotal_label(github_issue_url, label,retry_count) {
         retry_count = 0;
     }
     else{
-        sleepFor(1000* retry_count);
+        sleepFor(1500* retry_count);
     }
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
         console.log("Finding labels for issue "+issue_number);
@@ -159,17 +186,23 @@ function add_pivotal_label(github_issue_url, label,retry_count) {
                         console.log("Label (" + label + ") added successfully to ticket " + issue_number);
                     })
                     .catch(function (err) {
-                        if (err.statusCode == 500 && retry_count < 5) {
+                        if (err.statusCode == 500 && retry_count < 10) {
                             retry_count++;
                             add_pivotal_label(github_issue_url, label, retry_count);
                         }
                         else {
-                            console.log(err)
+                            console.log("something else went wrong");
+                          //  console.log(err)
                         }
                     });
             }
         });
-    });
+    }).catch(function (err) {
+            retry_count++;
+            add_pivotal_label(github_issue_url, label, retry_count);
+        });
+
+
 }
 function get_pivotal_labels(issue_number){
     var deferred = Q.defer();
@@ -179,9 +212,10 @@ function get_pivotal_labels(issue_number){
 
     var options=build_pivotal_rest_request(url,body);
     options.method="GET";
-    
+   // console.log(options);
     rp(options)
         .then(function (parsedBody) {
+           // console.log(parsedBody);
            // console.log(JSON.stringify(parsedBody));
            var labels=[];
            parsedBody.forEach(function(label){
@@ -191,7 +225,10 @@ function get_pivotal_labels(issue_number){
         })
         .catch(function (err) {
             // POST failed...
-            console.log(err)
+           // console.log(err);
+            console.log("Failed to get labels for ticket");
+            deferred.reject("Search Error");
+            //console.log(err)
         });
     return deferred.promise;
 
@@ -250,12 +287,15 @@ function find_pivotal_issue(github_issue){
             var issue_id=null;
             if (stories.length ===1){
                 issue_id=stories[0].id;
+                deferred.resolve(issue_id);
             }
-            deferred.resolve(issue_id);
+            else{
+                deferred.reject("issue not found");
+            }
         })
         .catch(function (err) {
             // POST failed...
-            console.log(err)
+            console.log('Unable to find ticket'+ github_issue);
         });
     return deferred.promise;
 }
@@ -298,7 +338,12 @@ function assign_pivotal_user(github_user, github_issue_url, retry_count) {
                     }
                 })
         }
-    })
+    }).catch(function (err) {
+        if (retry_count < 8) {
+            retry_count++;
+            assign_pivotal_user(github_user, github_issue_url, retry_count)
+        }
+    });
 }
 function removed_assigned_pivotal_user(github_user, github_issue_url) {
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
