@@ -15,20 +15,20 @@ function loadConfig() {
 
     if (typeof (process.env.API_TOKEN) != 'undefined') {
         console.log("API is defined");
-        config = {
+        return {
             "port": process.env.PORT,
             "pivotal": {
                 "project": process.env.PROJECT,
-                "API_TOKEN": process.env.API_TOKEN
+                "api_token": process.env.API_TOKEN
             }
-        }
-
+        };
+         
     }
     else {
-        config = local_config;
+        return local_config;
     }
 }
-loadConfig();
+config=loadConfig();
 
 get_pivotal_user_list().then(function(pivotal_users){
     pivotal_users.forEach(function (user) {
