@@ -3,5 +3,6 @@
     "pivotal": {
         "api_token": "",
         "project": ""
-    }
+    },
+    "secret":""
 }

@@ -1,7 +1,7 @@
 var http = require('http')
 var createHandler = require('github-webhook-handler')
 var Q = require("q");
-var handler = createHandler({ path: '/webhook', secret: 'blah' })
+
 var local_config = require("./conf/config.json");
 var config={};
 var rp = require('request-promise');
@@ -20,7 +20,8 @@ function loadConfig() {
             "pivotal": {
                 "project": process.env.PROJECT,
                 "api_token": process.env.API_TOKEN
-            }
+            },
+            "secret":process.env.SECRET
         };
          
     }
@@ -29,7 +30,7 @@ function loadConfig() {
     }
 }
 config=loadConfig();
-
+var handler = createHandler({ path: '/webhook', secret: config.secret })
 get_pivotal_user_list().then(function(pivotal_users){
     pivotal_users.forEach(function (user) {
         var user_data = search(authorized_users, user.person.email, 'email');
