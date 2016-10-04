@@ -55,7 +55,17 @@ http.createServer(function (req, res) {
 handler.on('error', function (err) {
   console.error('Error:', err.message)
 })
+
+handler.on('issue_comment',function(event){
+    var request=event.payload;
+    
+     var comment_body=request.comment.body;
  
+            if (comment_body.indexOf("@github-issue-sync") !== -1){
+                manual_issue_sync(request);
+            }
+});
+
 handler.on('push', function (event) {
   console.log('Received a push event for %s to %s',
     event.payload.repository.name,
@@ -66,7 +76,7 @@ handler.on('issues', function (event) {
    // console.log(event.payload);
     
     var issue_data=event.payload;
-
+    console.log(issue_data.action);
     switch (issue_data.action) {
         case 'labeled':
             add_pivotal_label(issue_data.issue.html_url, issue_data.label.name);
@@ -90,7 +100,33 @@ handler.on('issues', function (event) {
             break;
     }
 });
+function manual_issue_sync(issue_data) {
+    console.log("Manual issue sync requested");
+    var issue = issue_data.issue;
 
+    find_pivotal_issue(issue.html_url).then(function (data) {
+         issue.assignees.forEach(function(assignee){
+            assign_pivotal_user(assignee.login,issue.html_url);
+        });
+        issue.labels.forEach(function(label){
+            add_pivotal_label(issue.html_url,label.name);
+        });
+    }).catch(function (err) {
+        //issue doesnt exist, let's create it
+        create_pivotal_issue(issue);
+       // console.log(issue);
+        //assignees
+        issue.assignees.forEach(function(assignee){
+            assign_pivotal_user(assignee.login,issue.html_url);
+        });
+        issue.labels.forEach(function(label){
+            add_pivotal_label(issue.html_url,label.name);
+        });
+        
+    });
+
+
+}
 function create_pivotal_issue(issue_data){
     var description=issue_data.body+"\n";
     description+="Linked Github Issue - " + issue_data.html_url;
