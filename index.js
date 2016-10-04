@@ -79,14 +79,13 @@ handler.on('issues', function (event) {
     console.log(issue_data.action);
     switch (issue_data.action) {
         case 'labeled':
-            add_pivotal_label(issue_data.issue.html_url, issue_data.label.name);
+            add_pivotal_label(issue_data.issue, issue_data.label.name);
             break;
         case 'unlabeled':
             remove_pivotal_labels(issue_data.issue.html_url, issue_data.label.name);
             break;
         case 'assigned':
-            var assignee = issue_data.assignee.login;
-            assign_pivotal_user(assignee, issue_data.issue.html_url);
+            assign_pivotal_user(issue_data.issue);
             break;
         case 'unassigned':
             var assignee = issue_data.assignee.login;
@@ -106,22 +105,14 @@ function manual_issue_sync(issue_data) {
 
     find_pivotal_issue(issue.html_url).then(function (data) {
          issue.assignees.forEach(function(assignee){
-            assign_pivotal_user(assignee.login,issue.html_url);
+            assign_pivotal_user(issue);
         });
         issue.labels.forEach(function(label){
-            add_pivotal_label(issue.html_url,label.name);
+            add_pivotal_label(issue,label.name);
         });
     }).catch(function (err) {
         //issue doesnt exist, let's create it
-        create_pivotal_issue(issue);
-       // console.log(issue);
-        //assignees
-        issue.assignees.forEach(function(assignee){
-            assign_pivotal_user(assignee.login,issue.html_url);
-        });
-        issue.labels.forEach(function(label){
-            add_pivotal_label(issue.html_url,label.name);
-        });
+       trigger_issue_create(issue);
         
     });
 
@@ -193,9 +184,10 @@ function get_pivotal_user_list() {
     return deferred.promise;
 }
 
-function add_pivotal_label(github_issue_url, label,retry_count) {
+function add_pivotal_label(issue, label,retry_count) {
     console.log("Lablel to be added " + label);
-   
+    var github_issue_url=issue.html_url;
+
     if (retry_count == null) {
         retry_count = 0;
     }
@@ -223,7 +215,7 @@ function add_pivotal_label(github_issue_url, label,retry_count) {
                     .catch(function (err) {
                         if (err.statusCode == 500 && retry_count < 10) {
                             retry_count++;
-                            add_pivotal_label(github_issue_url, label, retry_count);
+                            add_pivotal_label(issue, label, retry_count);
                         }
                         else {
                             console.log("something else went wrong");
@@ -234,9 +226,22 @@ function add_pivotal_label(github_issue_url, label,retry_count) {
         });
     }).catch(function (err) {
             retry_count++;
-            add_pivotal_label(github_issue_url, label, retry_count);
+            if (retry_count < 8){
+                add_pivotal_label(issue, label, retry_count);
+            }
+            else{          
+                trigger_issue_create(issue);
+            }
         });
-
+}
+function trigger_issue_create(issue) {
+    create_pivotal_issue(issue);
+    issue.labels.forEach(function (label) {
+        add_pivotal_label(issue, label.name);
+    });
+    issue.assignees.forEach(function (assignee) {
+        assign_pivotal_user(issue);
+    });
 
 }
 function get_pivotal_labels(issue_number){
@@ -266,10 +271,6 @@ function get_pivotal_labels(issue_number){
             //console.log(err)
         });
     return deferred.promise;
-
-
-
-
 }
 function remove_pivotal_labels(github_issue_url, label,retry_count) {
     if (retry_count==null){
@@ -334,7 +335,10 @@ function find_pivotal_issue(github_issue){
         });
     return deferred.promise;
 }
-function assign_pivotal_user(github_user, github_issue_url, retry_count) {
+function assign_pivotal_user(issue,retry_count) {
+
+var github_user = issue.assignee.login;
+var github_issue_url=issue.html_url;
 
     if (retry_count == null) {
         retry_count = 0;
@@ -364,11 +368,12 @@ function assign_pivotal_user(github_user, github_issue_url, retry_count) {
                     console.log("Assigned user to ticket");
                 })
                 .catch(function (err) {
-                    if (err.statusCode == 500 && retry_count < 5) {
+                    if (err.statusCode == 500 && retry_count < 8) {
                         retry_count++;
-                        assign_pivotal_user(github_user, github_issue_url, retry_count)
+                        assign_pivotal_user(issue, retry_count)
                     }
                     else {
+                       
                         console.log(err)
                     }
                 })
@@ -376,7 +381,10 @@ function assign_pivotal_user(github_user, github_issue_url, retry_count) {
     }).catch(function (err) {
         if (retry_count < 8) {
             retry_count++;
-            assign_pivotal_user(github_user, github_issue_url, retry_count)
+            assign_pivotal_user(issue, retry_count)
+        }
+        else{
+             trigger_issue_create(issue);
         }
     });
 }
