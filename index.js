@@ -88,7 +88,6 @@ handler.on('issues', function (event) {
          case "closed":
             close_pivotal_issue(issue_data.issue);
             break;
-        
     }
 });
 
