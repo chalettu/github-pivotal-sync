@@ -8,6 +8,7 @@ To develop and test locally, you must have Node installed.
 
 Clone the Repo     
 Run ```npm install```  
+Once you have all the settings configured , to launch the app you can either type ``` npm start or node index.js ```
 
 ### Configure settings
 
