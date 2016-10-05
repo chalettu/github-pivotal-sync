@@ -32,7 +32,8 @@ If you want environment variables set
 **PROJECT** -> Pivotal Project ID  
 **SECRET** -> Github webhook secret
 ### Configure users
-User mapping is done in the conf/users.json file  
+User mapping is done in the conf/users.json file  or can be done through environmental variables
+**USERS** -> JSON array of user mappings.  See below for format.  
 The format of the file looks like this
 
 ```

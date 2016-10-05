@@ -3,18 +3,24 @@ var createHandler = require('github-webhook-handler')
 var Q = require("q");
 
 var local_config = require("./conf/config.json");
+var local_authorized_users=require("./conf/users.json");
 var config={};
 var rp = require('request-promise');
 var pivotal_base_url='https://www.pivotaltracker.com/services/v5/';
 var authorized_users_file= require("./conf/users.json");
 var users=[];
 //this populates our user mapping
-var authorized_users=authorized_users_file.user_list;
+var authorized_users=[];
 
 function loadConfig() {
-
+    if (typeof (process.env.USERS) != 'undefined') {
+        authorized_users= JSON.parse(process.env.USERS);
+    }
+    else {
+        authorized_users= authorized_users_file.user_list;
+    } 
     if (typeof (process.env.API_TOKEN) != 'undefined') {
-        console.log("API is defined");
+        console.log("Environment variables are defined and will be used");
         return {
             "port": process.env.PORT,
             "pivotal": {
@@ -22,8 +28,7 @@ function loadConfig() {
                 "api_token": process.env.API_TOKEN
             },
             "secret":process.env.SECRET
-        };
-         
+        };       
     }
     else {
         return local_config;
