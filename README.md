@@ -45,6 +45,10 @@ User mapping is done in the conf/users.json file  or can be done through environ
 } 
 ```
 The email address is the pivotal email address for the user you are wanting to map to.   
+### Usage scenarios
+If you create a new issue in GH it will automatically create the issue in Pivotal.  
+If you add a comment on a github issue that is not in Pivotal , it will create the issue in Pivotal.  
+If you add a label or assign a issue that is not in pivotal, it will create the issue in Pivotal.  
 
 ### Docker usage
 This repo comes with a working DOCKERFILE and all you need to get it set up is run a docker build like below  
