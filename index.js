@@ -58,12 +58,14 @@ handler.on('error', function (err) {
 
 handler.on('issue_comment',function(event){
     var request=event.payload;
-    
-     var comment_body=request.comment.body;
- 
-          //  if (comment_body.indexOf("@github-issue-sync") !== -1){
-                manual_issue_sync(request);
-         //   }
+   // console.log(request);
+    //pull_request
+    if (typeof request.pull_request === undefined) {
+        manual_issue_sync(request);
+    }
+    else{
+        //console.log("this is a pr");
+    }
 });
  
 handler.on('issues', function (event) {
@@ -94,7 +96,6 @@ handler.on('issues', function (event) {
     }
 });
 function manual_issue_sync(issue_data) {
-    console.log("Manual issue sync requested");
     var issue = issue_data.issue;
 
     find_pivotal_issue(issue.html_url).then(function (data) {
