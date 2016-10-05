@@ -30,11 +30,12 @@ If you want environment variables set
 **PORT** -> port number to run the webhook  
 **API_TOKEN** -> Pivotal API Token   
 **PROJECT** -> Pivotal Project ID  
-**SECRET** -> Github webhook secret
-### Configure users
-User mapping is done in the conf/users.json file  or can be done through environmental variables
+**SECRET** -> Github webhook secret  
 **USERS** -> JSON array of user mappings.  See below for format.  
-The format of the file looks like this
+The format of the file looks like this  
+
+### Configure users
+User mapping is done in the conf/users.json file  or can be done through environmental variables  
 
 ```
 {
