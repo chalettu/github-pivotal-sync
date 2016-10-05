@@ -61,16 +61,10 @@ handler.on('issue_comment',function(event){
     
      var comment_body=request.comment.body;
  
-            if (comment_body.indexOf("@github-issue-sync") !== -1){
+          //  if (comment_body.indexOf("@github-issue-sync") !== -1){
                 manual_issue_sync(request);
-            }
+         //   }
 });
-
-handler.on('push', function (event) {
-  console.log('Received a push event for %s to %s',
-    event.payload.repository.name,
-    event.payload.ref)
-})
  
 handler.on('issues', function (event) {
    // console.log(event.payload);
@@ -104,12 +98,12 @@ function manual_issue_sync(issue_data) {
     var issue = issue_data.issue;
 
     find_pivotal_issue(issue.html_url).then(function (data) {
-         issue.assignees.forEach(function(assignee){
+       /*  issue.assignees.forEach(function(assignee){
             assign_pivotal_user(issue);
         });
         issue.labels.forEach(function(label){
             add_pivotal_label(issue,label.name);
-        });
+        });*/
     }).catch(function (err) {
         //issue doesnt exist, let's create it
        trigger_issue_create(issue);
