@@ -54,6 +54,8 @@ If you add a label or assign a issue that is not in pivotal, it will create the 
 This repo comes with a working DOCKERFILE and all you need to get it set up is run a docker build like below  
 ```docker build -t myDockerId/github-pivotal-sync .```  
 ```docker run -dt myDockerId/github-pivotal-sync ```  
+ 
+If you would like to run this in a container and do not need to update the code base, please view the image at [https://hub.docker.com/r/chaleninja/github-pivotal-sync/](https://hub.docker.com/r/chaleninja/github-pivotal-sync/) 
 
 ### Testing the webhook
 Since this uses a git webhook you need to be able to create one from your local box for testing.  My recommended approach is to install ngrok locally from http://ngrok.com and then run ```ngrok http 8080``` If you are running a different port than 8080 change it appropriately.  Take the URL it generates like http://f3170278.ngrok.io  and append **/webhook** to it .  Example - http://f3170278.ngrok.io/webhook.  Plug this in as a new webhook in your repo and you should be able to test it locally.  
