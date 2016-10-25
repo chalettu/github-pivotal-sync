@@ -1,7 +1,7 @@
 var http = require('http')
 var createHandler = require('github-webhook-handler')
 var Q = require("q");
-
+const winston = require('winston');
 var local_config = require("./conf/config.json");
 var story_types_file = require("./conf/story_types.json");
 var story_types=[],default_story_type="";
@@ -13,6 +13,14 @@ var authorized_users_file= require("./conf/users.json");
 var users=[];
 //this populates our user mapping
 var authorized_users=[];
+if (typeof (process.env.LOG_LEVEL) != 'undefined') {
+ winston.level = process.env.LOG_LEVEL;
+logMsg("Loaded Logging Level "+winston.level ,winston.level );
+}
+else{
+    winson.level='info';
+    logMsg("Loaded Logging Level - info");
+}
 
 function loadConfig() {
     if (typeof (process.env.USERS) != 'undefined') {
@@ -30,18 +38,20 @@ function loadConfig() {
         story_types.push(story_type);    
         }
     });
-
+    logMsg("Story types "+JSON.stringify(story_types));
     if (typeof (process.env.API_TOKEN) != 'undefined') {
         console.log("Environment variables are defined and will be used");
-        console.log("Github Sync launched on port "+process.env.PORT);
-        return {
+        logMsg("Github Sync launched on port "+process.env.PORT);
+        var env_variables={
             "port": process.env.PORT,
             "pivotal": {
                 "project": process.env.PROJECT,
                 "api_token": process.env.API_TOKEN
             },
             "secret":process.env.SECRET
-        };       
+        }; 
+        logMsg("Loaded environ,env variables"+JSON.stringify(env_variables));  
+        return env_variables;
     }
     else {
         return local_config;
@@ -57,10 +67,11 @@ get_pivotal_user_list().then(function(pivotal_users){
             users.push(user_data);
         }
     });
+    logMsg(user_data,'verbose');
     //console.log(users);
 });
 
-console.log("Server Started and is listening on port "+config.port);
+logMsg("Server Started and is listening on port "+config.port);
 http.createServer(function (req, res) {
   
   handler(req, res, function (err) {
@@ -76,14 +87,14 @@ http.createServer(function (req, res) {
 }).listen(config.port)
  
 handler.on('error', function (err) {
-  console.error('Error:', err.message)
-})
+    logMsg("Handler experienced an error "+err.message);
+});
 
 handler.on('issue_comment',function(event){
     var request=event.payload;
-   // console.log(request);
-    //pull_request
+
     if (typeof request.pull_request === undefined) {
+        logMsg("Someone commented on a issue not a PR, time to sync issue ",'verbose');
         manual_issue_sync(request);
     }
     else{
@@ -92,10 +103,9 @@ handler.on('issue_comment',function(event){
 });
 
 handler.on('issues', function (event) {
-   // console.log(event.payload);
     
     var issue_data=event.payload;
-    console.log(issue_data.action);
+    logMsg('Issue Event occured - Event action is '+issue_data.action);
     switch (issue_data.action) {
         case 'labeled':
             add_pivotal_label(issue_data.issue, issue_data.label.name);
@@ -130,6 +140,7 @@ function manual_issue_sync(issue_data) {
         });*/
     }).catch(function (err) {
         //issue doesnt exist, let's create it
+        logMsg('Manual sync - About to trigger issue create','verbose');
        trigger_issue_create(issue);
         
     });
@@ -156,7 +167,7 @@ function create_pivotal_issue(issue_data){
         })
         .catch(function (err) {
             // POST failed...
-            console.log(err)
+            logMsg("create_pivotal_issue failed to create issue "+JSON.stringify(err));
         });
 }
 function close_pivotal_issue(issue_data) {
@@ -170,14 +181,14 @@ function close_pivotal_issue(issue_data) {
         var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/stories/'+issue_number;
         var options = build_pivotal_rest_request(url, body);
         options.method="PUT";
-        console.log(options);
+       
         rp(options)
             .then(function (parsedBody) {
                 console.log(parsedBody);
             })
             .catch(function (err) {
                 // POST failed...
-                console.log(err)
+                logMsg("close_pivotal_issue failed to close issue "+JSON.stringify(err));
             });
     });
 }
@@ -192,21 +203,17 @@ function get_pivotal_user_list() {
 
     rp(options)
         .then(function (parsedBody) {
-           
-           
             deferred.resolve(parsedBody);
-
-
         })
         .catch(function (err) {
             // POST failed...
-            console.log(err)
+           logMsg("get_pivotal_user_list failed to get users "+JSON.stringify(err));
         });
     return deferred.promise;
 }
 
 function add_pivotal_label(issue, label,retry_count) {
-    console.log("Lablel to be added " + label);
+    
     var github_issue_url=issue.html_url;
 
     if (retry_count == null) {
@@ -216,6 +223,7 @@ function add_pivotal_label(issue, label,retry_count) {
         sleepFor(1500* retry_count);
     }
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
+        logMsg("Label - "+label+' to be added to pivotal issue '+issue_number);
         var story_type = get_story_type(label);
         var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/stories/' + issue_number;
         var body = {
@@ -227,13 +235,13 @@ function add_pivotal_label(issue, label,retry_count) {
         var options = build_pivotal_rest_request(url, body);
         rp(options)
             .then(function (parsedBody) {
-                console.log("Set story type for pivotal ticket "+issue_number);
+                logMsg("Set story type for pivotal ticket "+issue_number);
             })
             .catch(function (err) {
-
+                  logMsg("Failed to set story type for pivotal ticket "+JSON.stringify(err));
             });
             
-        console.log("Finding labels for issue "+issue_number);
+        logMsg("Finding labels for issue "+issue_number,'verbose');
         get_pivotal_labels(issue_number).then(function (labels) {
             var existing_label = search(labels, label, 'name');
             if (existing_label == undefined) { // lets add the label
@@ -248,7 +256,7 @@ function add_pivotal_label(issue, label,retry_count) {
                 options.method = "POST";
                 rp(options)
                     .then(function (parsedBody) {
-                        console.log("Label (" + label + ") added successfully to ticket " + issue_number);
+                        logMsg("Label (" + label + ") added successfully to ticket " + issue_number);
                     })
                     .catch(function (err) {
                         if (err.statusCode == 500 && retry_count < 10) {
@@ -256,8 +264,7 @@ function add_pivotal_label(issue, label,retry_count) {
                             add_pivotal_label(issue, label, retry_count);
                         }
                         else {
-                            console.log("something else went wrong");
-                          //  console.log(err)
+                          logMsg("Failed to add labels to ticket - "+JSON.stringify(err));
                         }
                     });
             }
@@ -293,8 +300,6 @@ function get_pivotal_labels(issue_number){
    // console.log(options);
     rp(options)
         .then(function (parsedBody) {
-           // console.log(parsedBody);
-           // console.log(JSON.stringify(parsedBody));
            var labels=[];
            parsedBody.forEach(function(label){
                labels.push({"id":label.id,"name":label.name});
@@ -302,11 +307,8 @@ function get_pivotal_labels(issue_number){
             deferred.resolve(labels);
         })
         .catch(function (err) {
-            // POST failed...
-           // console.log(err);
-            console.log("Failed to get labels for ticket");
+            logMsg("Failed to get labels for ticket "+JSON.stringify(err));
             deferred.reject("Search Error");
-            //console.log(err)
         });
     return deferred.promise;
 }
@@ -342,7 +344,7 @@ function remove_pivotal_labels(github_issue_url, label,retry_count) {
            
             rp(options)
                 .then(function (parsedBody) {
-                  console.log("Label "+label+"("+existing_label.id+" ) removed from ticket +"+github_issue_url);
+                  logMsg("Label "+label+"("+existing_label.id+" ) removed from ticket +"+github_issue_url);
                 })
                 .catch(function (err) {
                     // POST failed..
@@ -351,7 +353,7 @@ function remove_pivotal_labels(github_issue_url, label,retry_count) {
                         remove_pivotal_labels(github_issue_url, label,retry_count);
                     }
                     else{
-                        console.log(err)
+                        logMsg("remove_pivotal_labels failed to remove labels "+JSON.stringify(err));
                     }
                 });
         });
@@ -380,8 +382,7 @@ function find_pivotal_issue(github_issue){
             }
         })
         .catch(function (err) {
-            // POST failed...
-            console.log('Unable to find ticket'+ github_issue);
+            logMsg('Unable to find ticket'+ github_issue+" "+JSON.stringify(err));
         });
     return deferred.promise;
 }
@@ -415,7 +416,7 @@ var github_issue_url=issue.html_url;
 
             rp(options)
                 .then(function (parsedBody) {
-                    console.log("Assigned user to ticket");
+                    logMsg("Assigned user "+user_id +" to ticket "+issue_number);
                 })
                 .catch(function (err) {
                     if (err.statusCode == 500 && retry_count < 8) {
@@ -424,7 +425,7 @@ var github_issue_url=issue.html_url;
                     }
                     else {
                        
-                        console.log(err)
+                        logMsg("assign_pivotal_user failed to assign user "+JSON.stringify(err));
                     }
                 })
         }
@@ -453,11 +454,11 @@ function removed_assigned_pivotal_user(github_user, github_issue_url) {
 
         rp(options)
             .then(function (parsedBody) {
-                console.log("removed user from story ");
+                logMsg("removed user from story ");
             })
             .catch(function (err) {
                 // POST failed...
-                console.log(err)
+                logMsg("removed_assigned_pivotal_user failed to remove user "+JSON.stringify(err));
             })
     });
 }
@@ -484,7 +485,14 @@ function search(array, key, prop){
     }
 }
 function sleepFor( sleepDuration ){
-    console.log("Sleeping for "+sleepDuration);
+    logMsg("Sleeping for "+sleepDuration);
     var now = new Date().getTime();
     while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
+}
+function logMsg(message,level){
+    
+    if (level==null){
+        level='info';
+    }
+    winston.log(level, message);
 }
