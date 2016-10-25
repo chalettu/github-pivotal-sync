@@ -2,12 +2,12 @@
     "story_types":[
         {
             "github_label":"bug",
-            "story_type":"Bug",
+            "story_type":"bug",
             "default_story_type":"false"
         },
         {
             "github_label":"enhancement",
-            "story_type":"Feature",
+            "story_type":"feature",
             "default_story_type":"false"
         },
                 {
