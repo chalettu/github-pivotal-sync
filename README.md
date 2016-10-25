@@ -62,6 +62,10 @@ Since this uses a git webhook you need to be able to create one from your local 
 
 ### Monitoring 
 If you would like to monitor to ensure the github sync service is listening, a built in endpoint of **http://myhostename.com/webook/test_hook**
+
+## Logging
+If you would like to get more verbose logging please set the environmental variable ```LOG_LEVEL``` to 'verbose'.  
+
 ## License
 
 See [LICENSE.txt](LICENSE.txt)
