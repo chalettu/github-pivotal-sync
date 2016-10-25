@@ -1,0 +1,19 @@
+{
+    "story_types":[
+        {
+            "github_label":"bug",
+            "story_type":"Bug",
+            "default_story_type":"false"
+        },
+        {
+            "github_label":"enhancement",
+            "story_type":"Feature",
+            "default_story_type":"false"
+        },
+                {
+            "github_label":"",
+            "story_type":"chore",
+            "default_story_type":"true"
+        }
+    ]
+}

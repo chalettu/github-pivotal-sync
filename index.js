@@ -3,6 +3,8 @@ var createHandler = require('github-webhook-handler')
 var Q = require("q");
 
 var local_config = require("./conf/config.json");
+var story_types_file = require("./conf/story_types.json");
+var story_types=[],default_story_type="";
 var local_authorized_users=require("./conf/users.json");
 var config={};
 var rp = require('request-promise');
@@ -19,6 +21,16 @@ function loadConfig() {
     else {
         authorized_users= authorized_users_file.user_list;
     } 
+    //load up story type mappings
+    story_types_file.forEach(function(story_type){
+        if (story_type.default_story_type==='true'){
+            default_story_type=story_type.story_type;
+        }
+        else{
+        story_types.push(story_type);    
+        }
+    });
+
     if (typeof (process.env.API_TOKEN) != 'undefined') {
         console.log("Environment variables are defined and will be used");
         console.log("Github Sync launched on port "+process.env.PORT);
@@ -47,7 +59,6 @@ get_pivotal_user_list().then(function(pivotal_users){
     });
     //console.log(users);
 });
-
 
 console.log("Server Started and is listening on port "+config.port);
 http.createServer(function (req, res) {
@@ -199,6 +210,23 @@ function add_pivotal_label(issue, label,retry_count) {
         sleepFor(1500* retry_count);
     }
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
+        var story_type = get_story_type(label);
+        var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/stories/' + issue_number;
+        var body = {
+            "project_id": config.pivotal.project,
+            "story_id": issue_number,
+            "story_type": story_type
+        };
+
+        var options = build_pivotal_rest_request(url, body);
+        rp(options)
+            .then(function (parsedBody) {
+                console.log("Set story type for pivotal ticket "+issue_number);
+            })
+            .catch(function (err) {
+
+            });
+            
         console.log("Finding labels for issue "+issue_number);
         get_pivotal_labels(issue_number).then(function (labels) {
             var existing_label = search(labels, label, 'name');
@@ -275,6 +303,18 @@ function get_pivotal_labels(issue_number){
             //console.log(err)
         });
     return deferred.promise;
+}
+function get_story_type(label){
+    var story_type="";
+    story_types.forEach(function(data){
+        if (data.github_label === label.toLowerCase()){
+            story_type=data.story_type;
+        }
+    })
+    if(story_type==''){
+        story_type=default_story_type;
+    }
+    return story_type;
 }
 function remove_pivotal_labels(github_issue_url, label,retry_count) {
     if (retry_count==null){
