@@ -18,7 +18,7 @@ if (typeof (process.env.LOG_LEVEL) != 'undefined') {
 logMsg("Loaded Logging Level "+winston.level ,winston.level );
 }
 else{
-    winson.level='info';
+    winston.level='info';
     logMsg("Loaded Logging Level - info");
 }
 
