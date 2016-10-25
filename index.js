@@ -21,6 +21,7 @@ function loadConfig() {
     } 
     if (typeof (process.env.API_TOKEN) != 'undefined') {
         console.log("Environment variables are defined and will be used");
+        console.log("Github Sync launched on port "+process.env.PORT);
         return {
             "port": process.env.PORT,
             "pivotal": {
@@ -175,7 +176,10 @@ function get_pivotal_user_list() {
     rp(options)
         .then(function (parsedBody) {
            
+           
             deferred.resolve(parsedBody);
+
+
         })
         .catch(function (err) {
             // POST failed...
