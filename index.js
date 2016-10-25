@@ -22,7 +22,7 @@ function loadConfig() {
         authorized_users= authorized_users_file.user_list;
     } 
     //load up story type mappings
-    story_types_file.forEach(function(story_type){
+    story_types_file.story_types.forEach(function(story_type){
         if (story_type.default_story_type==='true'){
             default_story_type=story_type.story_type;
         }
@@ -64,8 +64,14 @@ console.log("Server Started and is listening on port "+config.port);
 http.createServer(function (req, res) {
   
   handler(req, res, function (err) {
-    res.statusCode = 404
-    res.end('no such location')
+      if (req.url == '/webhook/test_hook') {
+          res.statusCode = 200;
+          res.end('Service is listening');
+      }
+      else {
+          res.statusCode = 404
+          res.end('no such location')
+      }
   })
 }).listen(config.port)
  
@@ -84,7 +90,7 @@ handler.on('issue_comment',function(event){
         //console.log("this is a pr");
     }
 });
- 
+
 handler.on('issues', function (event) {
    // console.log(event.payload);
     
