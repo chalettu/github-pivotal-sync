@@ -13,6 +13,12 @@
             "estimated_points":3
         },
         {
+            "github_label":"refactoring",
+            "story_type":"feature",
+            "default_story_type":"false",
+            "estimated_points":3
+        },
+        {
             "github_label":"",
             "story_type":"chore",
             "default_story_type":"true",
