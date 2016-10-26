@@ -225,11 +225,13 @@ function add_pivotal_label(issue, label,retry_count) {
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
         logMsg("Label - "+label+' to be added to pivotal issue '+issue_number);
          story_type_obj = get_story_type(label);
-       
+         if (story_type_obj== null){//set story type to default story type
+             story_type_obj=default_story_type;
+         }
        // build one big object to update then update 
-          var body = {
-            "story_type": story_type_obj.story_type
-        };
+         var body = {
+             "story_type": story_type_obj.story_type
+         };
 
           //this adds in estimate for tickets 
           get_pivotal_story_details(issue_number).then(function (issue_data) {
@@ -347,16 +349,16 @@ function update_pivotal_ticket(issue_number, data) {
         });
 }
 
-function get_story_type(label){
-    var story_type="";
+function get_story_type(label,label_field){
+    var story_type=null;
+    if (label_field==null){
+        label_field='github_label';
+    }
     story_types.forEach(function(data){
-        if (data.github_label === label.toLowerCase()){
+        if (data[label_field] === label.toLowerCase()){
             story_type=data;
         }
     })
-    if(story_type==''){
-        story_type=default_story_type;
-    }
     return story_type;
 }
 function remove_pivotal_labels(github_issue_url, label,retry_count) {
@@ -373,10 +375,34 @@ function remove_pivotal_labels(github_issue_url, label,retry_count) {
             ///projects/{project_id}/labels/{label_id}
             var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/labels/' + existing_label.id;
             var body = {};
-
+            var story_type=null;
             var options = build_pivotal_rest_request(url, body);
             options.method = "DELETE";
-           
+            
+            if (labels.length == 1){
+                //lets default the story type
+                story_type=default_story_type;
+            }
+            else{
+                labels.forEach(function (pivotal_label){                    
+                    if(story_type !=null || label == pivotal_label.name){//So if another label matched a story type or if label matches the current label in the array, skip it
+                        //don't do anything in this case
+                    }
+                    else{
+                       story_type=get_story_type(pivotal_label.name,'story_type');
+                    }
+                });
+                if (story_type==null){
+                    story_type=default_story_type;
+                }  
+            }
+            var request_obj = {
+                "story_type": story_type.story_type
+            };
+            update_pivotal_ticket(issue_number, request_obj).then(function (data) {
+                logMsg("Pivotal Ticket story type updated for ticket  " + issue_number);
+            });
+
             rp(options)
                 .then(function (parsedBody) {
                   logMsg("Label "+label+"("+existing_label.id+" ) removed from ticket +"+github_issue_url);
