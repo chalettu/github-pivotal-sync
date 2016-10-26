@@ -228,8 +228,6 @@ function add_pivotal_label(issue, label,retry_count) {
        
        // build one big object to update then update 
           var body = {
-            "project_id": config.pivotal.project,
-            "story_id": issue_number,
             "story_type": story_type_obj.story_type
         };
 
