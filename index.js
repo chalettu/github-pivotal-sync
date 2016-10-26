@@ -32,7 +32,7 @@ function loadConfig() {
     //load up story type mappings
     story_types_file.story_types.forEach(function(story_type){
         if (story_type.default_story_type==='true'){
-            default_story_type=story_type.story_type;
+            default_story_type=story_type;
         }
         else{
         story_types.push(story_type);    
@@ -144,8 +144,6 @@ function manual_issue_sync(issue_data) {
        trigger_issue_create(issue);
         
     });
-
-
 }
 function create_pivotal_issue(issue_data){
     var description=issue_data.body+"\n";
@@ -215,6 +213,7 @@ function get_pivotal_user_list() {
 function add_pivotal_label(issue, label,retry_count) {
     
     var github_issue_url=issue.html_url;
+    var story_type_obj={};
 
     if (retry_count == null) {
         retry_count = 0;
@@ -222,25 +221,29 @@ function add_pivotal_label(issue, label,retry_count) {
     else{
         sleepFor(1500* retry_count);
     }
+    
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
         logMsg("Label - "+label+' to be added to pivotal issue '+issue_number);
-        var story_type = get_story_type(label);
-        var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/stories/' + issue_number;
-        var body = {
+         story_type_obj = get_story_type(label);
+       
+       // build one big object to update then update 
+          var body = {
             "project_id": config.pivotal.project,
             "story_id": issue_number,
-            "story_type": story_type
+            "story_type": story_type_obj.story_type
         };
 
-        var options = build_pivotal_rest_request(url, body);
-        rp(options)
-            .then(function (parsedBody) {
-                logMsg("Set story type for pivotal ticket "+issue_number);
-            })
-            .catch(function (err) {
-                  logMsg("Failed to set story type for pivotal ticket "+JSON.stringify(err));
-            });
-            
+          //this adds in estimate for tickets 
+          get_pivotal_story_details(issue_number).then(function (issue_data) {
+              if (issue_data.estimate === 0 && story_type_obj.estimated_points > 0) {
+                  //this is the use case that default estimate exists and the label type has a estimated point associated
+                  //with it
+                  body.estimate = story_type_obj.estimated_points;
+              }
+              update_pivotal_ticket(issue_number, body).then(function (data) {
+                  logMsg("Pivotal Ticket story type and estimate updated for ticket  " + issue_number);
+              })
+          });    
         logMsg("Finding labels for issue "+issue_number,'verbose');
         get_pivotal_labels(issue_number).then(function (labels) {
             var existing_label = search(labels, label, 'name');
@@ -297,7 +300,6 @@ function get_pivotal_labels(issue_number){
 
     var options=build_pivotal_rest_request(url,body);
     options.method="GET";
-   // console.log(options);
     rp(options)
         .then(function (parsedBody) {
            var labels=[];
@@ -312,11 +314,46 @@ function get_pivotal_labels(issue_number){
         });
     return deferred.promise;
 }
+function get_pivotal_story_details(issue_number){
+    var deferred = Q.defer();
+
+    var url=pivotal_base_url+'projects/'+config.pivotal.project+'/stories/'+issue_number;
+    var body={};
+
+    var options=build_pivotal_rest_request(url,body);
+    options.method="GET";
+
+    rp(options)
+        .then(function (parsedBody) {
+           
+            deferred.resolve(parsedBody);
+        })
+        .catch(function (err) {
+            logMsg("Failed to get pivotal ticket "+JSON.stringify(err));
+            deferred.reject("Pivotal story detail Error");
+        });
+    return deferred.promise;
+}
+
+function update_pivotal_ticket(issue_number, data) {
+    var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/stories/' + issue_number;
+    var options = build_pivotal_rest_request(url, data);
+    options.method = "PUT";
+
+    rp(options)
+        .then(function (parsedBody) {
+            logMsg("Updated pivotal ticket " + issue_number);
+        })
+        .catch(function (err) {
+            logMsg("Failed to update pivotal ticket " + JSON.stringify(err));
+        });
+}
+
 function get_story_type(label){
     var story_type="";
     story_types.forEach(function(data){
         if (data.github_label === label.toLowerCase()){
-            story_type=data.story_type;
+            story_type=data;
         }
     })
     if(story_type==''){
@@ -413,7 +450,6 @@ var github_issue_url=issue.html_url;
             };
 
             var options = build_pivotal_rest_request(url, body);
-
             rp(options)
                 .then(function (parsedBody) {
                     logMsg("Assigned user "+user_id +" to ticket "+issue_number);
@@ -441,8 +477,6 @@ var github_issue_url=issue.html_url;
 }
 function removed_assigned_pivotal_user(github_user, github_issue_url) {
     find_pivotal_issue(github_issue_url).then(function (issue_number) {
-
-        //look up user id
         var user_obj = search(users, github_user, "github");
         var user_id = user_obj.pivotal_id
         var url = pivotal_base_url + 'projects/' + config.pivotal.project + '/stories/' + issue_number + '/owners/' + user_id;
