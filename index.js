@@ -132,17 +132,14 @@ function manual_issue_sync(issue_data) {
     var issue = issue_data.issue;
 
     find_pivotal_issue(issue.html_url).then(function (data) {
-       /*  issue.assignees.forEach(function(assignee){
-            assign_pivotal_user(issue);
-        });
-        issue.labels.forEach(function(label){
-            add_pivotal_label(issue,label.name);
-        });*/
+            //issue doesnt exist, let's create it
+            if (data == null){
+                      logMsg('Manual sync - About to trigger issue create', 'verbose');
+            trigger_issue_create(issue);
+            }
     }).catch(function (err) {
-        //issue doesnt exist, let's create it
-        logMsg('Manual sync - About to trigger issue create','verbose');
-       trigger_issue_create(issue);
         
+            logMsg("Tried searching for Pivotal Issue with gh url " + issue.html_url + " and the request had an error");
     });
 }
 function create_pivotal_issue(issue_data){
@@ -439,10 +436,11 @@ function find_pivotal_issue(github_issue){
                 deferred.resolve(issue_id);
             }
             else{
-                deferred.reject("issue not found");
+               deferred.resolve(null);
             }
         })
         .catch(function (err) {
+            deferred.reject("http error on trying to find pivotal ticket");
             logMsg('Unable to find ticket'+ github_issue+" "+JSON.stringify(err));
         });
     return deferred.promise;
