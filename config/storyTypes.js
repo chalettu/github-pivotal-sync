@@ -1,0 +1,28 @@
+module.exports.storyTypes = {
+ "mapping":[
+        {
+            "github_label":"bug",
+            "story_type":"bug",
+            "default_story_type":"false",
+            "estimated_points":0
+        },
+        {
+            "github_label":"enhancement",
+            "story_type":"feature",
+            "default_story_type":"false",
+            "estimated_points":3
+        },
+        {
+            "github_label":"refactoring",
+            "story_type":"feature",
+            "default_story_type":"false",
+            "estimated_points":3
+        },
+        {
+            "github_label":"",
+            "story_type":"chore",
+            "default_story_type":"true",
+            "estimated_points":0
+        }
+    ]
+}

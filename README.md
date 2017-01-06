@@ -7,8 +7,10 @@ This app can be used to sync a Github repo with a Pivotal Tracker project.  It u
 To develop and test locally, you must have Node installed.
 
 Clone the Repo     
-Run ```npm install```  
-Once you have all the settings configured , to launch the app you can either type ``` npm start or node index.js ```
+Run ```npm install```   
+or if you are using yarn Run ```yarn```  
+ 
+Once you have all the settings configured , to launch the app you can either type ``` npm start ```
 
 ### Configure settings
 
