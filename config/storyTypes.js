@@ -1,5 +1,5 @@
-{
-    "story_types":[
+module.exports.storyTypes = {
+ "mapping":[
         {
             "github_label":"bug",
             "story_type":"bug",
