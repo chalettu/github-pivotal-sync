@@ -14,55 +14,33 @@ Once you have all the settings configured , to launch the app you can either typ
 
 ### Configure settings
 
-This app supports either setting enviromental variables or using a config.json file to configure the settings  
+This app supports either setting enviromental variables or editing files found in /config/env/development.json  
 
-conf/config.json
-```
-{
-    "port": "7777",
-    "pivotal": {
-        "api_token": "1234",
-        "project": "1234"
-    },
-    "secret":"blah"
-}
+```module.exports = {  
+  github: {  
+    apiToken:   "",
+    repo: ""
+  },
+  bot: {
+    "username": ""
+  },
+  pivotal: {
+    "apiToken": "",
+    "project": "",
+    "baseUrl": 'https://www.pivotaltracker.com/services/v5/'
+  },
+  users: {
+    user_list: [
+      { "github": "test", "email": "test@test.com" }
+    ]
+  }
+};
 ```
 If you want environment variables set  
+the following is an example of how the naming would work
+```sails_github__ apiToken="abcdefg" ```
 
-**PORT** -> port number to run the webhook  
-**API_TOKEN** -> Pivotal API Token   
-**PROJECT** -> Pivotal Project ID  
-**SECRET** -> Github webhook secret  
-**USERS** -> JSON array of user mappings.  See below for format.  
-The format of the file looks like this  
 
-### Configure users
-User mapping is done in the conf/users.json file  or can be done through environmental variables  
-
-```
-{
-    "user_list":[
-        {"github":"chalettu","email":"test@test.com"}
-    ]
-} 
-```
-The email address is the pivotal email address for the user you are wanting to map to.  
-### Configuring Github label to Pivotal Story Types  
-If you would like to create a mapping between github labels to pivotal story types, please edit the ```conf/story_types.json ```  
-Sample entry  
-  
-```
-{
-  "github_label":"refactoring",
-  "story_type":"feature",
-  "default_story_type":"false",
-  "estimated_points":3
-}
-```  
-**github_label** = Github label to match  
-**story_type** = Pivotal story type to set for GH label  
-**default_story_type** = Boolean to say this entry is the default if no label match is found.  Please only set one per array of story types  
-**estimated_points** = Estimated sprint points in Pivotal for tickets of this story type  
 ### Usage scenarios
 If you create a new issue in GH it will automatically create the issue in Pivotal.  
 If you add a comment on a github issue that is not in Pivotal , it will create the issue in Pivotal.  
