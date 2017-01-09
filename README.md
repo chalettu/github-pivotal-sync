@@ -16,7 +16,8 @@ Once you have all the settings configured , to launch the app you can either typ
 
 This app supports either setting enviromental variables or editing files found in /config/env/development.json  
 
-```module.exports = {  
+```
+module.exports = {  
   github: {  
     apiToken:   "",
     repo: ""
@@ -38,7 +39,7 @@ This app supports either setting enviromental variables or editing files found i
 ```
 If you want environment variables set  
 the following is an example of how the naming would work
-```sails_github__ apiToken="abcdefg" ```
+``` sails_github__ apiToken="abcdefg" ```
 
 
 ### Usage scenarios
